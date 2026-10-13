@@ -1,0 +1,414 @@
+/* =========================
+   CONFIGURACIÓN GENERAL
+   Paleta de Ferretería Los Maestros (azul, celeste y blanco)
+========================= */
+
+:root {
+  --fe-azul-oscuro: #0b2d4d;
+  --fe-azul: #1769aa;
+  --fe-celeste: #5bc0eb;
+  --fe-borde: #e1ebf2;
+  --fe-fondo: #f2f7fb;
+
+  /* Se reemplaza el color primario de Bootstrap por la paleta del proyecto */
+  --bs-primary: #0b2d4d;
+  --bs-primary-rgb: 11, 45, 77;
+  --bs-info: #5bc0eb;
+  --bs-info-rgb: 91, 192, 235;
+  --bs-link-color: #1769aa;
+  --bs-link-color-rgb: 23, 105, 170;
+  --bs-link-hover-color: #0b2d4d;
+  --bs-link-hover-color-rgb: 11, 45, 77;
+
+  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  color: #333;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--fe-fondo);
+  color: #333;
+}
+
+.btn-primary {
+  --bs-btn-bg: #0b2d4d;
+  --bs-btn-border-color: #0b2d4d;
+  --bs-btn-hover-bg: #1769aa;
+  --bs-btn-hover-border-color: #1769aa;
+  --bs-btn-active-bg: #1769aa;
+  --bs-btn-active-border-color: #1769aa;
+  --bs-btn-disabled-bg: #0b2d4d;
+  --bs-btn-disabled-border-color: #0b2d4d;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: #0b2d4d;
+  --bs-btn-border-color: #0b2d4d;
+  --bs-btn-hover-bg: #0b2d4d;
+  --bs-btn-hover-border-color: #0b2d4d;
+  --bs-btn-active-bg: #0b2d4d;
+  --bs-btn-active-border-color: #0b2d4d;
+  --bs-btn-disabled-color: #0b2d4d;
+  --bs-btn-disabled-border-color: #0b2d4d;
+}
+
+.btn-info {
+  --bs-btn-bg: #5bc0eb;
+  --bs-btn-border-color: #5bc0eb;
+  --bs-btn-hover-bg: #7fd0f2;
+  --bs-btn-hover-border-color: #7fd0f2;
+  --bs-btn-active-bg: #7fd0f2;
+  --bs-btn-active-border-color: #7fd0f2;
+}
+
+.btn-link {
+  text-decoration: none;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+/* =========================
+   LAYOUT
+========================= */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+}
+
+/* Separación vertical entre las secciones de cada página */
+.app-main > * + * {
+  margin-top: 1.5rem;
+}
+
+/* =========================
+   NAVEGACIÓN
+========================= */
+
+.app-navbar {
+  background-color: var(--fe-azul-oscuro);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.app-navbar .navbar-brand {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fe-celeste);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.app-navbar .navbar-brand:hover,
+.app-navbar .navbar-brand:focus {
+  color: #8fd5f1;
+}
+
+.app-navbar .nav-link {
+  width: 100%;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+}
+
+.app-navbar .nav-link:hover,
+.app-navbar .nav-link:focus,
+.app-navbar .nav-link.active {
+  color: var(--fe-celeste);
+}
+
+@media (min-width: 992px) {
+  .app-navbar .nav-link {
+    width: auto;
+  }
+}
+
+.gestion-bar {
+  padding: 0.5rem 0;
+  background-color: #123f6b;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gestion-bar__titulo {
+  margin-right: 0.5rem;
+  color: #cbd9e5;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* =========================
+   ENCABEZADOS Y PANELES
+========================= */
+
+.page-header__titulo {
+  margin: 0;
+  color: var(--fe-azul-oscuro);
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.page-header__descripcion {
+  margin: 0.25rem 0 0;
+  color: #667b8a;
+}
+
+.panel {
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border: 1px solid var(--fe-borde);
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(11, 45, 77, 0.08);
+}
+
+.panel__titulo {
+  margin-bottom: 1rem;
+  color: var(--fe-azul-oscuro);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* =========================
+   INICIO
+========================= */
+
+.hero {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b2d4d, #1769aa);
+  border-radius: 0.75rem;
+}
+
+.hero__titulo {
+  margin-bottom: 0.75rem;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+}
+
+.hero__texto {
+  max-width: 40rem;
+  margin: 0 auto 1.5rem;
+  color: #e8f6ff;
+  font-size: 1.1rem;
+}
+
+/* =========================
+   PRODUCTOS
+========================= */
+
+.producto-card {
+  border-color: #dce8f0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+
+.producto-card:hover {
+  box-shadow: 0 5px 15px rgba(11, 45, 77, 0.15);
+  transform: translateY(-3px);
+}
+
+.producto-card--sin-stock {
+  opacity: 0.75;
+}
+
+.producto-card__imagen {
+  height: 180px;
+  object-fit: cover;
+  background: #eaf7fc;
+}
+
+.producto-card__categoria {
+  color: var(--fe-azul);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.producto-card__nombre {
+  margin: 0.25rem 0 0.5rem;
+  color: var(--fe-azul-oscuro);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.producto-card__precio {
+  margin-bottom: 0.25rem;
+  color: #0b5fa5;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.detalle__imagen {
+  width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  background: #eaf7fc;
+  border-radius: 0.75rem;
+}
+
+.detalle__precio {
+  color: #0b5fa5;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.detalle__cantidad {
+  width: 6rem;
+}
+
+/* =========================
+   CARRITO
+========================= */
+
+.carrito-item {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--fe-borde);
+  border-radius: 0.6rem;
+}
+
+.carrito-item__imagen {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  background: #eaf7fc;
+  border-radius: 0.5rem;
+}
+
+.carrito-item__nombre {
+  margin: 0 0 0.25rem;
+  color: var(--fe-azul-oscuro);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.carrito-item__acciones {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+@media (max-width: 575.98px) {
+  .carrito-item {
+    grid-template-columns: 64px 1fr;
+  }
+
+  .carrito-item__imagen {
+    width: 64px;
+    height: 64px;
+  }
+
+  .carrito-item__acciones {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+@media (min-width: 992px) {
+  .resumen-carrito {
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+/* =========================
+   TABLAS DE GESTIÓN
+========================= */
+
+.tabla-gestion {
+  margin-bottom: 0;
+}
+
+.tabla-gestion th {
+  color: #667b8a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tabla-gestion__miniatura {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: #eaf7fc;
+  border-radius: 0.4rem;
+}
+
+.stock-editor {
+  min-width: 8.5rem;
+  max-width: 11rem;
+  flex-wrap: nowrap;
+}
+
+.stock-editor .form-control {
+  min-width: 3.5rem;
+}
+
+/* =========================
+   AVATAR
+========================= */
+
+.avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #eaf7fc;
+}
+
+.avatar--sm {
+  width: 40px;
+  height: 40px;
+  font-size: 0.9rem;
+}
+
+.avatar--lg {
+  width: 110px;
+  height: 110px;
+  font-size: 2.2rem;
+}
+
+.avatar--iniciales {
+  color: #ffffff;
+  font-weight: 700;
+  background: var(--fe-azul);
+}
+
+/* =========================
+   PIE DE PÁGINA
+========================= */
+
+.app-footer {
+  padding: 1.5rem 0;
+  color: #cbd9e5;
+  background-color: var(--fe-azul-oscuro);
+}
