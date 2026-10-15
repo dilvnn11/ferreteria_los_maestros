@@ -18,7 +18,7 @@ export const DetallePage = ({ productoId }: DetallePageProps) => {
   const { notificar } = useNotificaciones();
   const [cantidad, setCantidad] = useState("1");
 
-  // Búsqueda directa comparando cadenas de texto (ej: "MC002")
+  // Búsqueda directa comparando como cadenas de texto
   const producto = productos.find((p) => String(p.id) === String(productoId));
 
   if (!producto) {
