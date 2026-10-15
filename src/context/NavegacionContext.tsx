@@ -28,11 +28,9 @@ export const NavegacionProvider = ({ children }: { children: React.ReactNode }) 
   const obtenerVistaDesdeURL = (): Vista => {
     const path = location.pathname;
 
-    // Detectar si la URL es un detalle de producto (ej: /producto/123)
     if (path.startsWith("/producto/")) {
-      const idStr = path.split("/")[2];
-      const productoId = Number(idStr);
-      return { nombre: "detalle", productoId } as unknown as Vista;
+      const idStr = path.split("/")[2]; // Mantiene el formato string ("MC002")
+      return { nombre: "detalle", id: idStr } as unknown as Vista;
     }
 
     const entrada = Object.entries(MAPA_RUTAS).find(([_, url]) => url === path);
@@ -50,15 +48,9 @@ export const NavegacionProvider = ({ children }: { children: React.ReactNode }) 
   const navegar = (nuevaVista: Vista) => {
     setVista(nuevaVista);
 
-    // Si la vista es "detalle", construimos la URL dinámica
     if (nuevaVista.nombre === "detalle") {
-      // Soporta si tu tipo Vista pasa 'productoId' o el objeto 'producto'
-      const id = "productoId" in nuevaVista 
-        ? nuevaVista.productoId 
-        : "producto" in nuevaVista 
-        ? (nuevaVista as any).producto?.id 
-        : null;
-
+      const p = nuevaVista as any;
+      const id = p.id ?? p.productoId ?? p.producto?.id;
       if (id) {
         navigate(`/producto/${id}`);
         return;

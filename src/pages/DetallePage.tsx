@@ -18,12 +18,13 @@ export const DetallePage = ({ productoId }: DetallePageProps) => {
   const { notificar } = useNotificaciones();
   const [cantidad, setCantidad] = useState("1");
 
-  const producto = productos.find((p) => p.id === productoId);
+  // Búsqueda directa comparando cadenas de texto (ej: "MC002")
+  const producto = productos.find((p) => String(p.id) === String(productoId));
 
   if (!producto) {
     return (
       <Panel titulo="Producto no encontrado">
-        <p>El producto que estás buscando no existe.</p>
+        <p>El producto con código "{productoId}" no existe en el catálogo.</p>
         <button
           type="button"
           className="btn btn-primary"
