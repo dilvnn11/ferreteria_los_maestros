@@ -1,31 +1,26 @@
 import { useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCarrito } from "../context/CarritoContext";
-import { useNavegacion } from "../context/NavegacionContext";
 import { useNotificaciones } from "../context/NotificacionesContext";
-import type { Vista } from "../types/Navegacion";
-import { EnlaceNav } from "./EnlaceNav";
 import { RolBadge } from "./RolBadge";
 
 export const Navbar = () => {
-  const { vista, navegar } = useNavegacion();
+  const navigate = useNavigate();
   const { usuarioActual, permisos, cerrarSesion } = useAuth();
   const { cantidadTotal } = useCarrito();
   const { notificar } = useNotificaciones();
   const [menuAbierto, setMenuAbierto] = useState(false);
 
-  const ir = (destino: Vista) => {
-    navegar(destino);
-    setMenuAbierto(false);
-  };
+  const cerrarMenu = () => setMenuAbierto(false);
 
   const salir = () => {
     cerrarSesion();
-    ir({ nombre: "inicio" });
+    cerrarMenu();
+    navigate("/");
     notificar("Sesión cerrada correctamente.", "info");
   };
 
-  const esActiva = (nombre: Vista["nombre"]) => vista.nombre === nombre;
   const tieneGestion =
     permisos.verGestionProductos ||
     permisos.crearUsuarios ||
@@ -35,13 +30,9 @@ export const Navbar = () => {
     <header>
       <nav className="navbar navbar-expand-lg navbar-dark app-navbar">
         <div className="container">
-          <button
-            type="button"
-            className="navbar-brand"
-            onClick={() => ir({ nombre: "inicio" })}
-          >
+          <Link className="navbar-brand" to="/" onClick={cerrarMenu}>
             🔧 Ferretería Los Maestros
-          </button>
+          </Link>
 
           <button
             type="button"
@@ -59,41 +50,54 @@ export const Navbar = () => {
             className={`collapse navbar-collapse ${menuAbierto ? "show" : ""}`}
           >
             <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-              <EnlaceNav
-                activo={esActiva("inicio")}
-                onClick={() => ir({ nombre: "inicio" })}
-              >
-                Inicio
-              </EnlaceNav>
-              <EnlaceNav
-                activo={esActiva("catalogo") || esActiva("detalle")}
-                onClick={() => ir({ nombre: "catalogo" })}
-              >
-                Catálogo
-              </EnlaceNav>
+              <li className="nav-item">
+                <NavLink
+                  to="/"
+                  end
+                  className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                  onClick={cerrarMenu}
+                >
+                  Inicio
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink
+                  to="/catalogo"
+                  className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                  onClick={cerrarMenu}
+                >
+                  Catálogo
+                </NavLink>
+              </li>
             </ul>
 
             <ul className="navbar-nav align-items-lg-center">
-              <EnlaceNav
-                activo={esActiva("carrito")}
-                onClick={() => ir({ nombre: "carrito" })}
-              >
-                🛒 Carrito{" "}
-                {cantidadTotal > 0 && (
-                  <span className="badge rounded-pill text-bg-info">
-                    {cantidadTotal}
-                  </span>
-                )}
-              </EnlaceNav>
+              <li className="nav-item">
+                <NavLink
+                  to="/carrito"
+                  className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                  onClick={cerrarMenu}
+                >
+                  🛒 Carrito{" "}
+                  {cantidadTotal > 0 && (
+                    <span className="badge rounded-pill text-bg-info">
+                      {cantidadTotal}
+                    </span>
+                  )}
+                </NavLink>
+              </li>
 
               {usuarioActual ? (
                 <>
-                  <EnlaceNav
-                    activo={esActiva("perfil")}
-                    onClick={() => ir({ nombre: "perfil" })}
-                  >
-                    Mi perfil
-                  </EnlaceNav>
+                  <li className="nav-item">
+                    <NavLink
+                      to="/perfil"
+                      className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                      onClick={cerrarMenu}
+                    >
+                      Mi perfil
+                    </NavLink>
+                  </li>
                   <li className="nav-item d-flex align-items-center gap-2 px-lg-2 py-2 py-lg-0 text-white-50">
                     <span>Hola, {usuarioActual.nombre}</span>
                     <RolBadge rol={usuarioActual.rol} />
@@ -110,18 +114,24 @@ export const Navbar = () => {
                 </>
               ) : (
                 <>
-                  <EnlaceNav
-                    activo={esActiva("registro")}
-                    onClick={() => ir({ nombre: "registro" })}
-                  >
-                    Registrarse
-                  </EnlaceNav>
-                  <EnlaceNav
-                    activo={esActiva("login")}
-                    onClick={() => ir({ nombre: "login" })}
-                  >
-                    Iniciar sesión
-                  </EnlaceNav>
+                  <li className="nav-item">
+                    <NavLink
+                      to="/registro"
+                      className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                      onClick={cerrarMenu}
+                    >
+                      Registrarse
+                    </NavLink>
+                  </li>
+                  <li className="nav-item">
+                    <NavLink
+                      to="/login"
+                      className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                      onClick={cerrarMenu}
+                    >
+                      Iniciar sesión
+                    </NavLink>
+                  </li>
                 </>
               )}
             </ul>
@@ -136,31 +146,34 @@ export const Navbar = () => {
               Panel {usuarioActual.rol === "administrador" ? "de administración" : "de ventas"}
             </span>
             {permisos.verGestionProductos && (
-              <button
-                type="button"
-                className={`btn btn-sm ${esActiva("productos-admin") ? "btn-light" : "btn-outline-light"}`}
-                onClick={() => ir({ nombre: "productos-admin" })}
+              <NavLink
+                to="/admin/productos"
+                className={({ isActive }) =>
+                  `btn btn-sm ${isActive ? "btn-light" : "btn-outline-light"}`
+                }
               >
                 {permisos.crearProductos ? "Productos" : "Inventario y stock"}
-              </button>
+              </NavLink>
             )}
             {permisos.crearUsuarios && (
-              <button
-                type="button"
-                className={`btn btn-sm ${esActiva("usuarios") ? "btn-light" : "btn-outline-light"}`}
-                onClick={() => ir({ nombre: "usuarios" })}
+              <NavLink
+                to="/admin/usuarios"
+                className={({ isActive }) =>
+                  `btn btn-sm ${isActive ? "btn-light" : "btn-outline-light"}`
+                }
               >
                 {permisos.verGestionUsuarios ? "Usuarios" : "Crear cliente"}
-              </button>
+              </NavLink>
             )}
             {permisos.gestionarCategorias && (
-              <button
-                type="button"
-                className={`btn btn-sm ${esActiva("categorias") ? "btn-light" : "btn-outline-light"}`}
-                onClick={() => ir({ nombre: "categorias" })}
+              <NavLink
+                to="/admin/categorias"
+                className={({ isActive }) =>
+                  `btn btn-sm ${isActive ? "btn-light" : "btn-outline-light"}`
+                }
               >
                 Categorías
-              </button>
+              </NavLink>
             )}
           </div>
         </div>
