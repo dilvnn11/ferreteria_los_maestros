@@ -50,6 +50,7 @@ function App() {
           {/* Rutas Protegidas */}
           <Route path="/carrito" element={<ContenedorVista vista={crearVista("carrito")} />} />
           <Route path="/perfil" element={<ContenedorVista vista={crearVista("perfil")} />} />
+          <Route path="/historial" element={<ContenedorVista vista={crearVista("historial")} />} />
 
           {/* Rutas de Administración */}
           <Route path="/admin/productos" element={<ContenedorVista vista={crearVista("productos-admin")} />} />

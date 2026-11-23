@@ -26,7 +26,7 @@ interface UsuarioFormProps {
   rolFijo?: boolean;
   /** Una sola columna de campos (cuando el formulario va en un panel angosto). */
   compacto?: boolean;
-  onSubmit: (valores: FormUsuarioValido) => Resultado;
+  onSubmit: (valores: FormUsuarioValido) => Resultado | Promise<Resultado>;
   onCancelar?: () => void;
 }
 
@@ -81,7 +81,7 @@ export const UsuarioForm = ({
     setErrorGeneral("");
   };
 
-  const manejarEnvio = (event: FormEvent<HTMLFormElement>) => {
+  const manejarEnvio = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nuevos = validarFormUsuario(
@@ -97,7 +97,7 @@ export const UsuarioForm = ({
       return;
     }
 
-    const resultado = onSubmit({ ...valores, genero: valores.genero });
+    const resultado = await Promise.resolve(onSubmit({ ...valores, genero: valores.genero }));
     if (!resultado.ok) {
       setErrorGeneral(resultado.error);
       return;

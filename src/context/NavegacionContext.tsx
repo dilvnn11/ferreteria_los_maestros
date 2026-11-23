@@ -19,6 +19,7 @@ const MAPA_RUTAS: Record<string, string> = {
   "productos-admin": "/admin/productos",
   usuarios: "/admin/usuarios",
   categorias: "/admin/categorias",
+  historial: "/historial",
 };
 
 export const NavegacionProvider = ({ children }: { children: React.ReactNode }) => {

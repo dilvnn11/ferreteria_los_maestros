@@ -53,8 +53,8 @@ export const ProductosAdminPage = () => {
     setEditando(null);
   };
 
-  const guardarNuevo = (producto: Producto) => {
-    const resultado = agregarProducto(producto);
+  const guardarNuevo = async (producto: Producto) => {
+    const resultado = await agregarProducto(producto);
     if (resultado.ok) {
       notificar(`Producto "${producto.nombre}" creado correctamente.`);
       setCreando(false);
@@ -62,9 +62,9 @@ export const ProductosAdminPage = () => {
     return resultado;
   };
 
-  const guardarEdicion = (producto: Producto) => {
+  const guardarEdicion = async (producto: Producto) => {
     const { id, ...cambios } = producto;
-    const resultado = actualizarProducto(id, cambios);
+    const resultado = await actualizarProducto(id, cambios);
     if (resultado.ok) {
       notificar(`Producto "${producto.nombre}" actualizado correctamente.`);
       setEditando(null);
@@ -72,8 +72,8 @@ export const ProductosAdminPage = () => {
     return resultado;
   };
 
-  const guardarStock = (productoId: string, stock: number) => {
-    const resultado = actualizarStock(productoId, stock);
+  const guardarStock = async (productoId: string, stock: number) => {
+    const resultado = await actualizarStock(productoId, stock);
     if (resultado.ok) {
       notificar(`Stock de ${productoId} actualizado a ${stock}.`);
     } else {
@@ -81,9 +81,9 @@ export const ProductosAdminPage = () => {
     }
   };
 
-  const confirmarEliminar = () => {
+  const confirmarEliminar = async () => {
     if (!porEliminar) return;
-    const resultado = eliminarProducto(porEliminar.id);
+    const resultado = await eliminarProducto(porEliminar.id);
     if (resultado.ok) {
       notificar(`Producto "${porEliminar.nombre}" eliminado.`, "info");
       if (editando?.id === porEliminar.id) setEditando(null);

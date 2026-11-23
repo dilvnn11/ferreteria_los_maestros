@@ -1,4 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { crearCompra } from "../api/compras";
+import { ApiException } from "../api/client";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import type { ItemCarrito, LineaCarrito } from "../types/Carrito";
 import type { Resultado } from "../types/Resultado";
@@ -14,13 +16,14 @@ interface CarritoContextType {
   disminuir: (productoId: string) => void;
   eliminar: (productoId: string) => void;
   vaciar: () => void;
-  finalizarCompra: () => Resultado;
+  /** Envía la compra al backend (descuenta stock real) y vacía el carrito si tiene éxito. */
+  finalizarCompra: () => Promise<Resultado>;
 }
 
 const CarritoContext = createContext<CarritoContextType | null>(null);
 
 export const CarritoProvider = ({ children }: { children: ReactNode }) => {
-  const { productos, descontarStock } = useProductos();
+  const { productos, refrescar } = useProductos();
   const [items, setItems] = useLocalStorage<ItemCarrito[]>(
     "ferreteria:carrito",
     [],
@@ -109,23 +112,29 @@ export const CarritoProvider = ({ children }: { children: ReactNode }) => {
 
   const vaciar = () => setItems([]);
 
-  const finalizarCompra = () => {
+  const finalizarCompra = async () => {
     if (lineas.length === 0) return fallo("El carrito está vacío.");
 
-    const aComprar: ItemCarrito[] = lineas.map((l) => ({
+    const aComprar = lineas.map((l) => ({
       productoId: l.producto.id,
       cantidad: l.cantidad,
     }));
-    // Verifica el stock real y lo descuenta; si falla, el carrito se conserva
-    const resultado = descontarStock(aComprar);
-    if (!resultado.ok) return resultado;
 
-    setItems([]);
-    return exitoVacio();
+    try {
+      await crearCompra(aComprar);
+      setItems([]);
+      // Actualiza el stock mostrado en el catálogo
+      await refrescar();
+      return exitoVacio();
+    } catch (e) {
+      if (e instanceof ApiException) return fallo(e.message);
+      if (e instanceof Error) return fallo(e.message);
+      return fallo("No se pudo registrar la compra. Intenta de nuevo.");
+    }
   };
 
   return (
-    <CarritoContext
+    <CarritoContext.Provider
       value={{
         lineas,
         total,
@@ -139,7 +148,7 @@ export const CarritoProvider = ({ children }: { children: ReactNode }) => {
       }}
     >
       {children}
-    </CarritoContext>
+    </CarritoContext.Provider>
   );
 };
 

@@ -37,9 +37,10 @@ export const LoginPage = () => {
     );
   }
 
-  const manejarEnvio = (event: FormEvent<HTMLFormElement>) => {
+  const manejarEnvio = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const resultado = iniciarSesion(correo, password);
+    setError("");
+    const resultado = await iniciarSesion(correo, password);
     if (!resultado.ok) {
       setError(resultado.error);
       return;
@@ -109,8 +110,8 @@ export const LoginPage = () => {
         <div className="col-12 col-lg-6">
           <Panel titulo="Cuentas de demostración">
             <p className="small text-muted">
-              Simulación académica: las credenciales se guardan en LocalStorage
-              y no constituyen un sistema de seguridad real.
+              Cuentas de demostración cargadas en la base de datos del backend
+              (contraseñas hasheadas con BCrypt).
             </p>
             <ul className="list-group">
               {cuentasDemo.map((cuenta) => (

@@ -1,9 +1,14 @@
-import { createContext, useContext, type ReactNode } from "react";
-import { categoriasIniciales } from "../data/categorias";
-import { productosIniciales } from "../data/productos";
-import { useLocalStorage } from "../hooks/useLocalStorage";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import * as productosApi from "../api/productos";
+import { ApiException } from "../api/client";
 import type { Categoria } from "../types/Categoria";
-import type { ItemCarrito } from "../types/Carrito";
 import type { Producto } from "../types/Producto";
 import type { Resultado } from "../types/Resultado";
 import { exitoVacio, fallo } from "../utils/resultado";
@@ -12,172 +17,174 @@ import { useAuth } from "./AuthContext";
 interface ProductosContextType {
   productos: Producto[];
   categorias: Categoria[];
+  cargando: boolean;
   nombreCategoria: (id: string) => string;
-  agregarProducto: (producto: Producto) => Resultado;
-  actualizarProducto: (id: string, cambios: Omit<Producto, "id">) => Resultado;
-  actualizarStock: (id: string, stock: number) => Resultado;
-  eliminarProducto: (id: string) => Resultado;
-  descontarStock: (items: ItemCarrito[]) => Resultado;
-  agregarCategoria: (nombre: string) => Resultado;
-  actualizarCategoria: (id: string, nombre: string) => Resultado;
-  eliminarCategoria: (id: string) => Resultado;
+  refrescar: () => Promise<void>;
+  agregarProducto: (producto: Producto) => Promise<Resultado>;
+  actualizarProducto: (id: string, cambios: Omit<Producto, "id">) => Promise<Resultado>;
+  actualizarStock: (id: string, stock: number) => Promise<Resultado>;
+  eliminarProducto: (id: string) => Promise<Resultado>;
+  agregarCategoria: (nombre: string) => Promise<Resultado>;
+  actualizarCategoria: (id: string, nombre: string) => Promise<Resultado>;
+  eliminarCategoria: (id: string) => Promise<Resultado>;
 }
 
 const ProductosContext = createContext<ProductosContextType | null>(null);
 
+function errorAResultado(e: unknown): Resultado {
+  if (e instanceof ApiException) return fallo(e.message);
+  if (e instanceof Error) return fallo(e.message);
+  return fallo("Error de comunicación con el servidor.");
+}
+
 export const ProductosProvider = ({ children }: { children: ReactNode }) => {
   const { permisos } = useAuth();
-  const [productos, setProductos] = useLocalStorage<Producto[]>(
-    "ferreteria:productos",
-    productosIniciales,
-  );
-  const [categorias, setCategorias] = useLocalStorage<Categoria[]>(
-    "ferreteria:categorias",
-    categoriasIniciales,
-  );
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [cargando, setCargando] = useState(true);
+
+  const refrescar = useCallback(async () => {
+    try {
+      const [prods, cats] = await Promise.all([
+        productosApi.listarProductos(),
+        productosApi.listarCategorias(),
+      ]);
+      setProductos(prods);
+      setCategorias(cats);
+    } catch {
+      // si el backend no está disponible, dejamos lo que haya
+    } finally {
+      setCargando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refrescar();
+  }, [refrescar]);
 
   const nombreCategoria = (id: string) =>
     categorias.find((c) => c.id === id)?.nombre ?? "Sin categoría";
 
-  // ---------- Productos ----------
-
-  const agregarProducto = (producto: Producto) => {
+  const agregarProducto = async (producto: Producto) => {
     if (!permisos.crearProductos) {
       return fallo("No tienes permisos para crear productos.");
     }
-    if (productos.some((p) => p.id.toLowerCase() === producto.id.toLowerCase())) {
-      return fallo("Ya existe un producto con ese código.");
+    try {
+      await productosApi.crearProducto(producto);
+      await refrescar();
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
     }
-    setProductos([...productos, producto]);
-    return exitoVacio();
   };
 
-  const actualizarProducto = (id: string, cambios: Omit<Producto, "id">) => {
+  const actualizarProducto = async (id: string, cambios: Omit<Producto, "id">) => {
     if (!permisos.editarProductos) {
       return fallo("No tienes permisos para modificar productos.");
     }
-    if (!productos.some((p) => p.id === id)) {
-      return fallo("El producto ya no existe.");
+    try {
+      await productosApi.actualizarProducto(id, cambios);
+      await refrescar();
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
     }
-    setProductos(productos.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
-    return exitoVacio();
   };
 
-  // Administrador y vendedor pueden ajustar el stock
-  const actualizarStock = (id: string, stock: number) => {
+  const actualizarStock = async (id: string, stock: number) => {
     if (!permisos.modificarStock) {
       return fallo("No tienes permisos para modificar el stock.");
     }
     if (!Number.isInteger(stock) || stock < 0) {
       return fallo("El stock debe ser un número entero igual o mayor a 0.");
     }
-    if (!productos.some((p) => p.id === id)) {
-      return fallo("El producto ya no existe.");
+    try {
+      await productosApi.actualizarStock(id, stock);
+      await refrescar();
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
     }
-    setProductos(productos.map((p) => (p.id === id ? { ...p, stock } : p)));
-    return exitoVacio();
   };
 
-  const eliminarProducto = (id: string) => {
+  const eliminarProducto = async (id: string) => {
     if (!permisos.eliminarProductos) {
       return fallo("No tienes permisos para eliminar productos.");
     }
-    setProductos(productos.filter((p) => p.id !== id));
-    return exitoVacio();
-  };
-
-  // Lo usa el carrito al finalizar la compra (cualquier rol puede comprar)
-  const descontarStock = (items: ItemCarrito[]) => {
-    for (const item of items) {
-      const producto = productos.find((p) => p.id === item.productoId);
-      if (!producto || producto.stock < item.cantidad) {
-        return fallo(
-          `Stock insuficiente para "${producto?.nombre ?? item.productoId}". Disponible: ${producto?.stock ?? 0}`,
-        );
-      }
+    try {
+      await productosApi.eliminarProducto(id);
+      await refrescar();
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
     }
-    setProductos(
-      productos.map((p) => {
-        const item = items.find((i) => i.productoId === p.id);
-        return item ? { ...p, stock: Math.max(0, p.stock - item.cantidad) } : p;
-      }),
-    );
-    return exitoVacio();
   };
 
-  // ---------- Categorías ----------
-
-  const existeNombre = (nombre: string, idExcluido?: string) =>
-    categorias.some(
-      (c) =>
-        c.id !== idExcluido &&
-        c.nombre.toLowerCase() === nombre.trim().toLowerCase(),
-    );
-
-  const agregarCategoria = (nombre: string) => {
+  const agregarCategoria = async (nombre: string) => {
     if (!permisos.gestionarCategorias) {
-      return fallo("No tienes permisos para administrar categorías.");
+      return fallo("No tienes permisos para gestionar categorías.");
     }
-    if (existeNombre(nombre)) {
-      return fallo("Ya existe una categoría con ese nombre.");
+    try {
+      await productosApi.crearCategoria(nombre);
+      await refrescar();
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
     }
-    setCategorias([...categorias, { id: `cat-${Date.now()}`, nombre: nombre.trim() }]);
-    return exitoVacio();
   };
 
-  const actualizarCategoria = (id: string, nombre: string) => {
+  const actualizarCategoria = async (id: string, nombre: string) => {
     if (!permisos.gestionarCategorias) {
-      return fallo("No tienes permisos para administrar categorías.");
+      return fallo("No tienes permisos para gestionar categorías.");
     }
-    if (existeNombre(nombre, id)) {
-      return fallo("Ya existe una categoría con ese nombre.");
+    try {
+      await productosApi.actualizarCategoria(id, nombre);
+      await refrescar();
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
     }
-    // Los productos referencian la categoría por id, así que el cambio se refleja solo
-    setCategorias(
-      categorias.map((c) => (c.id === id ? { ...c, nombre: nombre.trim() } : c)),
-    );
-    return exitoVacio();
   };
 
-  const eliminarCategoria = (id: string) => {
+  const eliminarCategoria = async (id: string) => {
     if (!permisos.gestionarCategorias) {
-      return fallo("No tienes permisos para administrar categorías.");
+      return fallo("No tienes permisos para gestionar categorías.");
     }
-    const enUso = productos.filter((p) => p.categoriaId === id).length;
-    if (enUso > 0) {
-      return fallo(
-        `No se puede eliminar: hay ${enUso} producto(s) en esta categoría. Muévelos o elimínalos primero.`,
-      );
+    try {
+      await productosApi.eliminarCategoria(id);
+      await refrescar();
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
     }
-    setCategorias(categorias.filter((c) => c.id !== id));
-    return exitoVacio();
   };
 
   return (
-    <ProductosContext
+    <ProductosContext.Provider
       value={{
         productos,
         categorias,
+        cargando,
         nombreCategoria,
+        refrescar,
         agregarProducto,
         actualizarProducto,
         actualizarStock,
         eliminarProducto,
-        descontarStock,
         agregarCategoria,
         actualizarCategoria,
         eliminarCategoria,
       }}
     >
       {children}
-    </ProductosContext>
+    </ProductosContext.Provider>
   );
 };
 
 export const useProductos = () => {
-  const contexto = useContext(ProductosContext);
-  if (contexto === null) {
+  const ctx = useContext(ProductosContext);
+  if (!ctx) {
     throw new Error("useProductos requiere ProductosProvider");
   }
-  return contexto;
+  return ctx;
 };

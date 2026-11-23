@@ -7,7 +7,7 @@ import { CampoTexto } from "./CampoTexto";
 interface CategoriaFormProps {
   categorias: Categoria[];
   categoriaInicial?: Categoria;
-  onSubmit: (nombre: string) => Resultado;
+  onSubmit: (nombre: string) => Resultado | Promise<Resultado>;
   onCancelar?: () => void;
 }
 
@@ -20,7 +20,7 @@ export const CategoriaForm = ({
   const [nombre, setNombre] = useState(categoriaInicial?.nombre ?? "");
   const [error, setError] = useState("");
 
-  const manejarEnvio = (event: FormEvent<HTMLFormElement>) => {
+  const manejarEnvio = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const errorNombre = validarNombreCategoria(
       nombre,
@@ -31,7 +31,7 @@ export const CategoriaForm = ({
       setError(errorNombre);
       return;
     }
-    const resultado = onSubmit(nombre);
+    const resultado = await Promise.resolve(onSubmit(nombre));
     if (!resultado.ok) {
       setError(resultado.error);
       return;

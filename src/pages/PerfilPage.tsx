@@ -18,8 +18,8 @@ export const PerfilPage = () => {
 
   if (!usuarioActual) return null;
 
-  const guardar = (valores: FormUsuarioValido) => {
-    const resultado = actualizarPerfil(aCambiosPerfil(valores));
+  const guardar = async (valores: FormUsuarioValido) => {
+    const resultado = await actualizarPerfil(aCambiosPerfil(valores));
     if (resultado.ok) notificar("Perfil actualizado correctamente.");
     return resultado;
   };

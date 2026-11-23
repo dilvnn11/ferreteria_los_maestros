@@ -21,23 +21,23 @@ export const CategoriasPage = () => {
   const [editando, setEditando] = useState<Categoria | null>(null);
   const [porEliminar, setPorEliminar] = useState<Categoria | null>(null);
 
-  const guardar = (nombre: string) => {
+  const guardar = async (nombre: string) => {
     if (editando) {
-      const resultado = actualizarCategoria(editando.id, nombre);
+      const resultado = await actualizarCategoria(editando.id, nombre);
       if (resultado.ok) {
         notificar(`Categoría "${nombre.trim()}" actualizada.`);
         setEditando(null);
       }
       return resultado;
     }
-    const resultado = agregarCategoria(nombre);
+    const resultado = await agregarCategoria(nombre);
     if (resultado.ok) notificar(`Categoría "${nombre.trim()}" creada.`);
     return resultado;
   };
 
-  const confirmarEliminar = () => {
+  const confirmarEliminar = async () => {
     if (!porEliminar) return;
-    const resultado = eliminarCategoria(porEliminar.id);
+    const resultado = await eliminarCategoria(porEliminar.id);
     if (resultado.ok) {
       notificar(`Categoría "${porEliminar.nombre}" eliminada.`, "info");
       if (editando?.id === porEliminar.id) setEditando(null);

@@ -29,16 +29,16 @@ export const UsuariosPage = () => {
   const [editando, setEditando] = useState<UsuarioPublico | null>(null);
   const [porEliminar, setPorEliminar] = useState<UsuarioPublico | null>(null);
 
-  const guardar = (valores: FormUsuarioValido) => {
+  const guardar = async (valores: FormUsuarioValido) => {
     if (editando) {
-      const resultado = actualizarUsuario(editando.id, aCambiosUsuario(valores));
+      const resultado = await actualizarUsuario(editando.id, aCambiosUsuario(valores));
       if (resultado.ok) {
         notificar(`Usuario ${valores.nombre} actualizado correctamente.`);
         setEditando(null);
       }
       return resultado;
     }
-    const resultado = crearUsuario(aDatosUsuario(valores), valores.rol);
+    const resultado = await crearUsuario(aDatosUsuario(valores), valores.rol);
     if (resultado.ok) {
       notificar(
         `Usuario ${valores.nombre} creado con rol ${etiquetaRol[valores.rol]}.`,
@@ -47,9 +47,9 @@ export const UsuariosPage = () => {
     return resultado;
   };
 
-  const confirmarEliminar = () => {
+  const confirmarEliminar = async () => {
     if (!porEliminar) return;
-    const resultado = eliminarUsuario(porEliminar.id);
+    const resultado = await eliminarUsuario(porEliminar.id);
     if (resultado.ok) {
       notificar(`Usuario ${porEliminar.nombre} eliminado.`, "info");
       if (editando?.id === porEliminar.id) setEditando(null);
@@ -59,8 +59,8 @@ export const UsuariosPage = () => {
     setPorEliminar(null);
   };
 
-  const quitarBloqueo = (usuario: UsuarioPublico) => {
-    const resultado = desbloquear(usuario.correo);
+  const quitarBloqueo = async (usuario: UsuarioPublico) => {
+    const resultado = await desbloquear(usuario.id);
     if (resultado.ok) {
       notificar(`Cuenta de ${usuario.nombre} desbloqueada.`);
     } else {

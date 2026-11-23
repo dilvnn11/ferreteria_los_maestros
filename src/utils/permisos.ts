@@ -59,6 +59,7 @@ export function vistaPermitida(
 ): boolean {
   switch (vista.nombre) {
     case "perfil":
+    case "historial":
       return haySesion;
     case "usuarios":
       return permisos.crearUsuarios;

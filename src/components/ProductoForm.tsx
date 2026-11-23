@@ -12,7 +12,7 @@ interface ProductoFormProps {
   modo: "crear" | "editar";
   productoInicial?: Producto;
   categorias: Categoria[];
-  onSubmit: (producto: Producto) => Resultado;
+  onSubmit: (producto: Producto) => Resultado | Promise<Resultado>;
   onCancelar?: () => void;
 }
 
@@ -50,7 +50,7 @@ export const ProductoForm = ({
     setErrorGeneral("");
   };
 
-  const manejarEnvio = (event: FormEvent<HTMLFormElement>) => {
+  const manejarEnvio = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nuevos = validarFormProducto(valores, modo, productos, categorias);
     setErrores(nuevos);
@@ -73,7 +73,7 @@ export const ProductoForm = ({
       imagen: valores.imagen.trim(),
     };
 
-    const resultado = onSubmit(producto);
+    const resultado = await Promise.resolve(onSubmit(producto));
     if (!resultado.ok) {
       setErrorGeneral(resultado.error);
       return;

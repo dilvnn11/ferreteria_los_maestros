@@ -8,6 +8,7 @@ import { PerfilPage } from "../pages/PerfilPage";
 import { ProductosAdminPage } from "../pages/ProductosAdminPage";
 import { RegistroPage } from "../pages/RegistroPage";
 import { UsuariosPage } from "../pages/UsuariosPage";
+import { HistorialPage } from "../pages/HistorialPage";
 import type { Vista } from "../types/Navegacion";
 
 /** Renderizado condicional: elige qué página mostrar según la vista actual. */
@@ -33,5 +34,7 @@ export const VistaActual = ({ vista }: { vista: Vista }) => {
       return <ProductosAdminPage />;
     case "categorias":
       return <CategoriasPage />;
+    case "historial":
+      return <HistorialPage />;
   }
 };

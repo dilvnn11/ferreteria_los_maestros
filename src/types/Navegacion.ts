@@ -9,4 +9,5 @@ export type Vista =
   | { nombre: "perfil" }
   | { nombre: "usuarios" }
   | { nombre: "productos-admin" }
-  | { nombre: "categorias" };
+  | { nombre: "categorias" }
+  | { nombre: "historial" };

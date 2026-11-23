@@ -28,8 +28,8 @@ export const CarritoPage = () => {
     if (!resultado.ok) notificar(resultado.error, "warning");
   };
 
-  const finalizar = () => {
-    const resultado = finalizarCompra();
+  const finalizar = async () => {
+    const resultado = await finalizarCompra();
     if (resultado.ok) {
       notificar(
         "¡Compra realizada con éxito! Gracias por preferir Ferretería Los Maestros.",

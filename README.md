@@ -1,59 +1,41 @@
-# Ferretería Los Maestros · Evaluación Parcial N.° 2 (DSY1104)
+# Ferretería Los Maestros — Frontend
 
-Migración de la tienda virtual (Evaluación 1: HTML + CSS + JS) a **React + TypeScript + Vite + Bootstrap 5**,
-con administración de usuarios, productos y categorías, tres roles y perfil personal.
-Equipo: Deland Cabello y Josefa Sánchez.
+React 19 + TypeScript + Vite + Bootstrap 5.
 
-## Cómo ejecutarlo
+## Requisitos
+
+- Node.js 20+
+- Backend Spring Boot en ejecución (`http://localhost:8080`) con MariaDB/XAMPP
+
+## Configuración
 
 ```bash
+cp .env.example .env
+# VITE_API_URL=http://localhost:8080
 npm install
-npm run dev       # desarrollo
-npm run build     # compila (tsc + vite)
-npm run lint
+npm run dev
 ```
 
-## Cuentas de demostración
+La aplicación se abre en `http://localhost:5173`.
 
-| Rol | Correo | Contraseña |
-|---|---|---|
-| Administrador | admin@duoc.cl | Admin123 |
-| Vendedor | vendedor@duoc.cl | Vendedor123 |
-| Cliente | cliente@duoc.cl | Cliente123 |
+## Cuentas demo (seed del backend)
 
-> Simulación académica solo frontend: usuarios, contraseñas, carrito y productos viven en LocalStorage
-> y **no** constituyen un sistema de seguridad real. Para reiniciar los datos: `localStorage.clear()` en la consola del navegador.
+| Rol            | Correo             | Contraseña   |
+|----------------|--------------------|--------------|
+| Administrador  | admin@duoc.cl      | Admin123     |
+| Vendedor       | vendedor@duoc.cl   | Vendedor123  |
+| Cliente        | cliente@duoc.cl    | Cliente123   |
 
-## Roles
+## Integración con el backend
 
-| Operación | Administrador | Vendedor | Cliente / invitado |
-|---|:-:|:-:|:-:|
-| Navegar y comprar | ✔ | ✔ | ✔ |
-| Editar su propio perfil (sin cambiar rol) | ✔ | ✔ | ✔ |
-| Consultar productos (inventario) | ✔ | ✔ | — |
-| Modificar stock | ✔ | ✔ | — |
-| Crear / editar / eliminar productos | ✔ | — | — |
-| Crear / editar / eliminar categorías | ✔ | — | — |
-| Crear usuarios | cualquier rol | solo cliente | — |
-| Consultar / editar / eliminar usuarios | ✔ | — | — |
+- Autenticación JWT (`Authorization: Bearer …`) almacenada en `localStorage` (`ferreteria:token`).
+- Catálogo, categorías, usuarios y compras se obtienen y modifican vía API REST.
+- El carrito permanece en el navegador; al finalizar se envía a `POST /api/compras`.
+- Historial del cliente: `GET /api/compras/mias` (vista `/historial`).
+- Sesión restaurada al recargar con `GET /api/auth/me`.
 
-El registro público siempre crea cuentas de **cliente**.
+## Scripts
 
-## Estructura (misma organización del proyecto `colaboradores`)
-
-```
-src/
-├── assets/img/        avatares, placeholder y productos/
-├── components/        componentes reutilizables (campos, tarjetas, tablas, formularios, navbar…)
-├── context/           estado global: Auth, Productos, Carrito, Navegación, Notificaciones
-├── data/              datos iniciales (productos, categorías, usuarios, regiones)
-├── hooks/             useLocalStorage
-├── pages/             una página por sección de la tienda / administración
-├── styles/            styles.css (paleta + clases propias sobre Bootstrap)
-├── types/             interfaces y tipos TypeScript
-├── utils/             validaciones, permisos, filtros, formato, fechas
-├── App.tsx
-└── main.tsx
-```
-
-Ver `INFORME.md` para las decisiones de migración y la guía de la presentación.
+- `npm run dev` — desarrollo
+- `npm run build` — producción
+- `npm run preview` — previsualizar build

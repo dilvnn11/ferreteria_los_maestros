@@ -27,9 +27,9 @@ export const RegistroPage = () => {
     );
   }
 
-  // El registro público siempre crea una cuenta de cliente (lo garantiza el contexto)
-  const registrarCliente = (valores: FormUsuarioValido) => {
-    const resultado = registrar(aDatosUsuario(valores));
+  // El registro público siempre crea una cuenta de cliente (lo garantiza el backend)
+  const registrarCliente = async (valores: FormUsuarioValido) => {
+    const resultado = await registrar(aDatosUsuario(valores));
     if (resultado.ok) {
       notificar("¡Registro exitoso! Ya puedes iniciar sesión.");
       navegar({ nombre: "login" });

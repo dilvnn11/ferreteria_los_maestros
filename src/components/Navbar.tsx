@@ -98,6 +98,15 @@ export const Navbar = () => {
                       Mi perfil
                     </NavLink>
                   </li>
+                  <li className="nav-item">
+                    <NavLink
+                      to="/historial"
+                      className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                      onClick={cerrarMenu}
+                    >
+                      Mis compras
+                    </NavLink>
+                  </li>
                   <li className="nav-item d-flex align-items-center gap-2 px-lg-2 py-2 py-lg-0 text-white-50">
                     <span>Hola, {usuarioActual.nombre}</span>
                     <RolBadge rol={usuarioActual.rol} />

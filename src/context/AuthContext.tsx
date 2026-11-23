@@ -1,6 +1,15 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { usuariosIniciales } from "../data/usuarios";
-import { useLocalStorage } from "../hooks/useLocalStorage";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import * as authApi from "../api/auth";
+import * as usuariosApi from "../api/usuarios";
+import { ApiException, setToken } from "../api/client";
 import type { Permisos } from "../types/Permisos";
 import type { Resultado } from "../types/Resultado";
 import type {
@@ -8,232 +17,215 @@ import type {
   CambiosUsuario,
   DatosUsuario,
   Rol,
-  Usuario,
   UsuarioPublico,
 } from "../types/Usuario";
 import { permisosDe } from "../utils/permisos";
 import { exito, exitoVacio, fallo } from "../utils/resultado";
 
-const MAX_INTENTOS = 3;
+type UsuarioConBloqueo = UsuarioPublico & { bloqueado?: boolean };
 
 interface AuthContextType {
-  usuarios: UsuarioPublico[];
+  usuarios: UsuarioConBloqueo[];
   usuarioActual: UsuarioPublico | null;
   permisos: Permisos;
-  iniciarSesion: (correo: string, password: string) => Resultado<UsuarioPublico>;
+  cargando: boolean;
+  iniciarSesion: (correo: string, password: string) => Promise<Resultado<UsuarioPublico>>;
   cerrarSesion: () => void;
-  registrar: (datos: DatosUsuario) => Resultado;
-  crearUsuario: (datos: DatosUsuario, rol: Rol) => Resultado;
-  actualizarUsuario: (id: string, cambios: CambiosUsuario) => Resultado;
-  actualizarPerfil: (cambios: CambiosPerfil) => Resultado;
-  eliminarUsuario: (id: string) => Resultado;
+  registrar: (datos: DatosUsuario) => Promise<Resultado>;
+  crearUsuario: (datos: DatosUsuario, rol: Rol) => Promise<Resultado>;
+  actualizarUsuario: (id: string, cambios: CambiosUsuario) => Promise<Resultado>;
+  actualizarPerfil: (cambios: CambiosPerfil) => Promise<Resultado>;
+  eliminarUsuario: (id: string) => Promise<Resultado>;
   estaBloqueado: (correo: string) => boolean;
-  desbloquear: (correo: string) => Resultado;
+  desbloquear: (idOCorreo: string) => Promise<Resultado>;
+  refrescarUsuarios: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// La contraseña nunca sale del contexto: los componentes reciben UsuarioPublico
-const aPublico = (u: Usuario): UsuarioPublico => ({
-  id: u.id,
-  nombre: u.nombre,
-  apellido: u.apellido,
-  fechaNacimiento: u.fechaNacimiento,
-  correo: u.correo,
-  direccion: u.direccion,
-  region: u.region,
-  genero: u.genero,
-  rol: u.rol,
-  fechaRegistro: u.fechaRegistro,
-});
-
-const normalizarCorreo = (correo: string) => correo.trim().toLowerCase();
+function errorAResultado(e: unknown): Resultado {
+  if (e instanceof ApiException) {
+    return fallo(e.message);
+  }
+  if (e instanceof Error) {
+    return fallo(e.message);
+  }
+  return fallo("Error de comunicación con el servidor.");
+}
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [usuarios, setUsuarios] = useLocalStorage<Usuario[]>(
-    "ferreteria:usuarios",
-    usuariosIniciales,
-  );
-  const [sesionId, setSesionId] = useLocalStorage<string | null>(
-    "ferreteria:sesion",
-    null,
-  );
-  const [intentos, setIntentos] = useLocalStorage<Record<string, number>>(
-    "ferreteria:intentos",
-    {},
-  );
+  const [usuarioActual, setUsuarioActual] = useState<UsuarioPublico | null>(null);
+  const [usuarios, setUsuarios] = useState<UsuarioConBloqueo[]>([]);
+  const [cargando, setCargando] = useState(true);
 
-  const usuariosPublicos = useMemo(() => usuarios.map(aPublico), [usuarios]);
-  // La sesión guarda solo el id: si el usuario cambia, la sesión refleja el cambio
-  const usuarioActual =
-    usuariosPublicos.find((u) => u.id === sesionId) ?? null;
   const rolActual = usuarioActual?.rol ?? null;
   const permisos = useMemo(() => permisosDe(rolActual), [rolActual]);
 
-  const correoEnUso = (correo: string, idExcluido?: string) =>
-    usuarios.some(
-      (u) => u.correo === normalizarCorreo(correo) && u.id !== idExcluido,
-    );
+  // Restaurar sesión desde token al montar
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      const token = localStorage.getItem("ferreteria:token");
+      if (!token) {
+        setCargando(false);
+        return;
+      }
+      try {
+        const u = await authApi.me();
+        if (!cancelado) setUsuarioActual(u);
+      } catch {
+        setToken(null);
+        if (!cancelado) setUsuarioActual(null);
+      } finally {
+        if (!cancelado) setCargando(false);
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
-  const estaBloqueado = (correo: string) =>
-    (intentos[normalizarCorreo(correo)] ?? 0) >= MAX_INTENTOS;
+  // Cargar lista de usuarios cuando hay permisos de admin/vendedor
+  const refrescarUsuarios = useCallback(async () => {
+    if (!permisos.verGestionUsuarios && !permisos.crearUsuarios) {
+      setUsuarios([]);
+      return;
+    }
+    try {
+      const lista = await usuariosApi.listarUsuarios();
+      setUsuarios(lista);
+    } catch {
+      // silencioso: puede fallar si el token expiró
+    }
+  }, [permisos.verGestionUsuarios, permisos.crearUsuarios]);
 
-  const iniciarSesion = (correo: string, password: string) => {
-    const clave = normalizarCorreo(correo);
-    if (!clave || !password) {
+  useEffect(() => {
+    if (usuarioActual) {
+      void refrescarUsuarios();
+    } else {
+      setUsuarios([]);
+    }
+  }, [usuarioActual, refrescarUsuarios]);
+
+  const iniciarSesion = async (correo: string, password: string) => {
+    if (!correo.trim() || !password) {
       return fallo("Debes completar correo y contraseña.");
     }
-    if (estaBloqueado(clave)) {
-      return fallo(
-        "Esta cuenta está bloqueada por demasiados intentos fallidos. Contacta al administrador.",
-      );
+    try {
+      const res = await authApi.login(correo.trim(), password);
+      setUsuarioActual(res.usuario);
+      return exito(res.usuario);
+    } catch (e) {
+      return errorAResultado(e);
     }
-
-    const usuario = usuarios.find(
-      (u) => u.correo === clave && u.password === password,
-    );
-
-    if (usuario) {
-      const copia = { ...intentos };
-      delete copia[clave];
-      setIntentos(copia);
-      setSesionId(usuario.id);
-      return exito(aPublico(usuario));
-    }
-
-    const total = (intentos[clave] ?? 0) + 1;
-    setIntentos({ ...intentos, [clave]: total });
-    const restantes = MAX_INTENTOS - total;
-    return fallo(
-      restantes <= 0
-        ? "Cuenta bloqueada por 3 intentos fallidos consecutivos."
-        : `Credenciales incorrectas. Te quedan ${restantes} intento(s).`,
-    );
   };
 
-  const cerrarSesion = () => setSesionId(null);
-
-  const construirUsuario = (datos: DatosUsuario, rol: Rol): Usuario => ({
-    ...datos,
-    nombre: datos.nombre.trim(),
-    apellido: datos.apellido.trim(),
-    correo: normalizarCorreo(datos.correo),
-    direccion: datos.direccion.trim(),
-    id: `u-${Date.now()}`,
-    rol,
-    fechaRegistro: new Date().toISOString(),
-  });
-
-  // Registro público: siempre crea una cuenta de cliente
-  const registrar = (datos: DatosUsuario) => {
-    if (correoEnUso(datos.correo)) {
-      return fallo("Ya existe una cuenta con ese correo electrónico.");
-    }
-    setUsuarios([...usuarios, construirUsuario(datos, "cliente")]);
-    return exitoVacio();
+  const cerrarSesion = () => {
+    authApi.logout();
+    setUsuarioActual(null);
+    setUsuarios([]);
   };
 
-  const crearUsuario = (datos: DatosUsuario, rol: Rol) => {
+  const registrar = async (datos: DatosUsuario) => {
+    try {
+      await authApi.registro(datos);
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
+    }
+  };
+
+  const crearUsuario = async (datos: DatosUsuario, rol: Rol) => {
     if (!permisos.crearUsuarios || !permisos.rolesAsignables.includes(rol)) {
       return fallo("No tienes permisos para crear usuarios con ese rol.");
     }
-    if (correoEnUso(datos.correo)) {
-      return fallo("Ya existe una cuenta con ese correo electrónico.");
+    try {
+      await usuariosApi.crearUsuario(datos, rol);
+      await refrescarUsuarios();
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
     }
-    setUsuarios([...usuarios, construirUsuario(datos, rol)]);
-    return exitoVacio();
   };
 
-  const actualizarUsuario = (id: string, cambios: CambiosUsuario) => {
+  const actualizarUsuario = async (id: string, cambios: CambiosUsuario) => {
     if (!permisos.editarUsuarios) {
       return fallo("No tienes permisos para modificar usuarios.");
     }
-    const existente = usuarios.find((u) => u.id === id);
-    if (!existente) return fallo("El usuario ya no existe.");
-    if (correoEnUso(cambios.correo, id)) {
-      return fallo("Ya existe una cuenta con ese correo electrónico.");
-    }
-    if (id === usuarioActual?.id && cambios.rol !== existente.rol) {
+    if (id === usuarioActual?.id && cambios.rol !== usuarioActual.rol) {
       return fallo("No puedes cambiar tu propio rol.");
     }
-
-    const { password, ...resto } = cambios;
-    setUsuarios(
-      usuarios.map((u) =>
-        u.id === id
-          ? {
-              ...u,
-              ...resto,
-              nombre: resto.nombre.trim(),
-              apellido: resto.apellido.trim(),
-              correo: normalizarCorreo(resto.correo),
-              direccion: resto.direccion.trim(),
-              password: password ? password : u.password,
-            }
-          : u,
-      ),
-    );
-    return exitoVacio();
-  };
-
-  // Edición del perfil propio: el rol y la contraseña no se tocan
-  const actualizarPerfil = (cambios: CambiosPerfil) => {
-    if (!usuarioActual) return fallo("Debes iniciar sesión.");
-    if (correoEnUso(cambios.correo, usuarioActual.id)) {
-      return fallo("Ya existe una cuenta con ese correo electrónico.");
+    try {
+      const actualizado = await usuariosApi.actualizarUsuario(id, cambios);
+      await refrescarUsuarios();
+      if (id === usuarioActual?.id) {
+        setUsuarioActual(actualizado);
+      }
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
     }
-    setUsuarios(
-      usuarios.map((u) =>
-        u.id === usuarioActual.id
-          ? {
-              ...u,
-              nombre: cambios.nombre.trim(),
-              apellido: cambios.apellido.trim(),
-              fechaNacimiento: cambios.fechaNacimiento,
-              correo: normalizarCorreo(cambios.correo),
-              direccion: cambios.direccion.trim(),
-              region: cambios.region,
-              genero: cambios.genero,
-            }
-          : u,
-      ),
-    );
-    return exitoVacio();
   };
 
-  const eliminarUsuario = (id: string) => {
+  const actualizarPerfil = async (cambios: CambiosPerfil) => {
+    if (!usuarioActual) return fallo("Debes iniciar sesión.");
+    try {
+      const actualizado = await authApi.actualizarPerfil(cambios);
+      setUsuarioActual(actualizado);
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
+    }
+  };
+
+  const eliminarUsuario = async (id: string) => {
     if (!permisos.eliminarUsuarios) {
       return fallo("No tienes permisos para eliminar usuarios.");
     }
     if (id === usuarioActual?.id) {
       return fallo("No puedes eliminar tu propia cuenta.");
     }
-    const existente = usuarios.find((u) => u.id === id);
-    if (!existente) return fallo("El usuario ya no existe.");
-
-    setUsuarios(usuarios.filter((u) => u.id !== id));
-    const copia = { ...intentos };
-    delete copia[existente.correo];
-    setIntentos(copia);
-    return exitoVacio();
+    try {
+      await usuariosApi.eliminarUsuario(id);
+      await refrescarUsuarios();
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
+    }
   };
 
-  const desbloquear = (correo: string) => {
+  /** Acepta id de usuario (preferido) o correo para compatibilidad con UI anterior. */
+  const estaBloqueado = (correoOId: string) => {
+    const u = usuarios.find(
+      (x) => x.correo === correoOId.trim().toLowerCase() || x.id === correoOId,
+    );
+    return u?.bloqueado === true;
+  };
+
+  const desbloquear = async (idOCorreo: string) => {
     if (!permisos.editarUsuarios) {
       return fallo("No tienes permisos para desbloquear cuentas.");
     }
-    const copia = { ...intentos };
-    delete copia[normalizarCorreo(correo)];
-    setIntentos(copia);
-    return exitoVacio();
+    const u = usuarios.find(
+      (x) => x.id === idOCorreo || x.correo === idOCorreo.trim().toLowerCase(),
+    );
+    if (!u) return fallo("Usuario no encontrado.");
+    try {
+      await usuariosApi.desbloquearUsuario(u.id);
+      await refrescarUsuarios();
+      return exitoVacio();
+    } catch (e) {
+      return errorAResultado(e);
+    }
   };
 
   return (
-    <AuthContext
+    <AuthContext.Provider
       value={{
-        usuarios: usuariosPublicos,
+        usuarios,
         usuarioActual,
         permisos,
+        cargando,
         iniciarSesion,
         cerrarSesion,
         registrar,
@@ -243,17 +235,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         eliminarUsuario,
         estaBloqueado,
         desbloquear,
+        refrescarUsuarios,
       }}
     >
       {children}
-    </AuthContext>
+    </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  const contexto = useContext(AuthContext);
-  if (contexto === null) {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
     throw new Error("useAuth requiere AuthProvider");
   }
-  return contexto;
+  return ctx;
 };
