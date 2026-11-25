@@ -7,6 +7,7 @@ import { LoginPage } from "../pages/LoginPage";
 import { PerfilPage } from "../pages/PerfilPage";
 import { ProductosAdminPage } from "../pages/ProductosAdminPage";
 import { RegistroPage } from "../pages/RegistroPage";
+import { ReportesPage } from "../pages/ReportesPage";
 import { UsuariosPage } from "../pages/UsuariosPage";
 import { HistorialPage } from "../pages/HistorialPage";
 import type { Vista } from "../types/Navegacion";
@@ -36,5 +37,7 @@ export const VistaActual = ({ vista }: { vista: Vista }) => {
       return <CategoriasPage />;
     case "historial":
       return <HistorialPage />;
+    case "reportes":
+      return <ReportesPage />;
   }
 };

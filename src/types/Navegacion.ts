@@ -10,4 +10,5 @@ export type Vista =
   | { nombre: "usuarios" }
   | { nombre: "productos-admin" }
   | { nombre: "categorias" }
+  | { nombre: "reportes" }
   | { nombre: "historial" };

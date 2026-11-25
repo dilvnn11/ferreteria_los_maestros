@@ -14,11 +14,12 @@ const SIN_PERMISOS: Permisos = {
   eliminarProductos: false,
   modificarStock: false,
   gestionarCategorias: false,
+  verReportes: false,
 };
 
 /**
  * Matriz de permisos por rol (única fuente de verdad).
- * - administrador: CRUD de usuarios, productos y categorías.
+ * - administrador: CRUD de usuarios, productos y categorías, y reportes de ventas.
  * - vendedor: consulta productos, modifica stock y crea usuarios solo con rol cliente.
  * - cliente / invitado: solo funcionalidades comerciales (navegar y comprar).
  */
@@ -37,6 +38,7 @@ export function permisosDe(rol: Rol | null): Permisos {
         eliminarProductos: true,
         modificarStock: true,
         gestionarCategorias: true,
+        verReportes: true,
       };
     case "vendedor":
       return {
@@ -67,6 +69,8 @@ export function vistaPermitida(
       return permisos.verGestionProductos;
     case "categorias":
       return permisos.gestionarCategorias;
+    case "reportes":
+      return permisos.verReportes;
     default:
       return true;
   }

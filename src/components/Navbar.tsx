@@ -24,7 +24,8 @@ export const Navbar = () => {
   const tieneGestion =
     permisos.verGestionProductos ||
     permisos.crearUsuarios ||
-    permisos.gestionarCategorias;
+    permisos.gestionarCategorias ||
+    permisos.verReportes;
 
   return (
     <header>
@@ -147,6 +148,7 @@ export const Navbar = () => {
           </div>
         </div>
       </nav>
+      
 
       {usuarioActual && tieneGestion && (
         <div className="gestion-bar">
@@ -184,9 +186,20 @@ export const Navbar = () => {
                 Categorías
               </NavLink>
             )}
+            {permisos.verReportes && (
+              <NavLink
+                to="/admin/reportes"
+                className={({ isActive }) =>
+                  `btn btn-sm ${isActive ? "btn-light" : "btn-outline-light"}`
+                }
+              >
+                Reportes
+              </NavLink>
+            )}
           </div>
         </div>
       )}
     </header>
+    
   );
 };

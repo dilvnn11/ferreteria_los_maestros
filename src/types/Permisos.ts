@@ -13,4 +13,5 @@ export interface Permisos {
   eliminarProductos: boolean;
   modificarStock: boolean;
   gestionarCategorias: boolean;
+  verReportes: boolean;
 }

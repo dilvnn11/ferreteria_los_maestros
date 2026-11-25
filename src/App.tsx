@@ -56,6 +56,7 @@ function App() {
           <Route path="/admin/productos" element={<ContenedorVista vista={crearVista("productos-admin")} />} />
           <Route path="/admin/usuarios" element={<ContenedorVista vista={crearVista("usuarios")} />} />
           <Route path="/admin/categorias" element={<ContenedorVista vista={crearVista("categorias")} />} />
+          <Route path="/admin/reportes" element={<ContenedorVista vista={crearVista("reportes")} />} />
 
           {/* Redirección por defecto */}
           <Route path="*" element={<Navigate to="/" replace />} />

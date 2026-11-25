@@ -43,7 +43,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-function errorAResultado(e: unknown): Resultado {
+function errorAResultado(e: unknown): { ok: false; error: string } {
   if (e instanceof ApiException) {
     return fallo(e.message);
   }
